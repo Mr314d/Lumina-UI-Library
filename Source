@@ -1,0 +1,374 @@
+--[[
+    Lumina UI Library v2.0
+    Advanced UI components with modern design
+]]
+
+local LuminaUI = {}
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+-- Enhanced Theme Configuration
+LuminaUI.Settings = {
+    Theme = {
+        Primary = Color3.fromRGB(65, 105, 225),    -- Royal Blue
+        Secondary = Color3.fromRGB(45, 45, 45),    -- Dark Gray
+        Background = Color3.fromRGB(25, 25, 25),   -- Darker Gray
+        LightBackground = Color3.fromRGB(35, 35, 35), -- Lighter Background
+        Text = Color3.fromRGB(255, 255, 255),      -- White
+        SubText = Color3.fromRGB(200, 200, 200),   -- Light Gray
+        Success = Color3.fromRGB(46, 204, 113),    -- Green
+        Error = Color3.fromRGB(231, 76, 60),       -- Red
+        Warning = Color3.fromRGB(241, 196, 15),    -- Yellow
+        Accent = Color3.fromRGB(90, 130, 250),     -- Light Blue
+    },
+    Animation = {
+        Duration = 0.3,
+        Style = Enum.EasingStyle.Quart,
+        Direction = Enum.EasingDirection.Out
+    },
+    Fonts = {
+        Regular = Enum.Font.GothamMedium,
+        Bold = Enum.Font.GothamBold,
+        Semi = Enum.Font.GothamSemibold
+    }
+}
+
+-- Utility Functions
+local function CreateTween(instance, properties, duration)
+    return TweenService:Create(
+        instance,
+        TweenInfo.new(duration or LuminaUI.Settings.Animation.Duration, 
+            LuminaUI.Settings.Animation.Style,
+            LuminaUI.Settings.Animation.Direction),
+        properties
+    )
+end
+
+-- Enhanced Window Creation
+function LuminaUI.CreateWindow(config)
+    config = config or {}
+    local WindowTitle = config.Title or "Lumina Window"
+    local WindowSize = config.Size or UDim2.new(0, 600, 0, 400)
+    
+    -- Create main GUI components
+    local ScreenGui = Instance.new("ScreenGui")
+    local MainFrame = Instance.new("Frame")
+    local Shadow = Instance.new("ImageLabel")
+    local Sidebar = Instance.new("Frame")
+    local ContentFrame = Instance.new("Frame")
+    local TabsHolder = Instance.new("ScrollingFrame")
+    
+    -- Setup ScreenGui with protection
+    if syn and syn.protect_gui then
+        syn.protect_gui(ScreenGui)
+    end
+    ScreenGui.Name = "LuminaUI_" .. game:GetService("HttpService"):GenerateGUID(false)
+    ScreenGui.Parent = CoreGui
+    ScreenGui.ResetOnSpawn = false
+    
+    -- Enhanced MainFrame setup
+    MainFrame.Name = "MainFrame"
+    MainFrame.Parent = ScreenGui
+    MainFrame.BackgroundColor3 = LuminaUI.Settings.Theme.Background
+    MainFrame.Position = UDim2.new(0.5, -WindowSize.X.Offset/2, 0.5, -WindowSize.Y.Offset/2)
+    MainFrame.Size = WindowSize
+    MainFrame.ClipsDescendants = true
+    
+    -- Add modern shadow
+    Shadow.Name = "Shadow"
+    Shadow.Parent = MainFrame
+    Shadow.BackgroundTransparency = 1
+    Shadow.Position = UDim2.new(0, -15, 0, -15)
+    Shadow.Size = UDim2.new(1, 30, 1, 30)
+    Shadow.Image = "rbxassetid://6015897843"
+    Shadow.ImageColor3 = Color3.new(0, 0, 0)
+    Shadow.ImageTransparency = 0.5
+    Shadow.ScaleType = Enum.ScaleType.Slice
+    Shadow.SliceCenter = Rect.new(49, 49, 450, 450)
+
+    -- Window Object
+    local Window = {
+        Tabs = {},
+        ActiveTab = nil,
+        Components = {}
+    }
+
+    -- Enhanced Tab System
+    function Window:CreateTab(config)
+        local Tab = {
+            Name = config.Name or "New Tab",
+            Icon = config.Icon,
+            Components = {}
+        }
+        
+        -- Create tab button
+        local TabButton = Instance.new("TextButton")
+        TabButton.Name = "Tab_" .. Tab.Name
+        TabButton.Parent = TabsHolder
+        TabButton.BackgroundColor3 = LuminaUI.Settings.Theme.Secondary
+        TabButton.Size = UDim2.new(1, -10, 0, 40)
+        TabButton.Text = Tab.Name
+        TabButton.Font = LuminaUI.Settings.Fonts.Semi
+        
+        -- Create tab content
+        local TabContent = Instance.new("ScrollingFrame")
+        TabContent.Name = "Content_" .. Tab.Name
+        TabContent.Parent = ContentFrame
+        TabContent.Visible = false
+        TabContent.BackgroundTransparency = 1
+        TabContent.Size = UDim2.new(1, 0, 1, 0)
+        
+        -- Tab Components
+        function Tab:AddButton(config)
+            local Button = Instance.new("TextButton")
+            Button.Name = config.Name or "Button"
+            Button.Parent = TabContent
+            Button.BackgroundColor3 = LuminaUI.Settings.Theme.Primary
+            Button.Size = UDim2.new(0, 180, 0, 35)
+            Button.Text = config.Text or "Button"
+            Button.Font = LuminaUI.Settings.Fonts.Regular
+            
+            -- Add hover and click effects
+            local ButtonEffects = {
+                Hover = CreateTween(Button, {BackgroundColor3 = LuminaUI.Settings.Theme.Accent}),
+                Click = CreateTween(Button, {Size = UDim2.new(0, 175, 0, 33)})
+            }
+            
+            Button.MouseEnter:Connect(function()
+                ButtonEffects.Hover:Play()
+            end)
+            
+            Button.MouseLeave:Connect(function()
+                ButtonEffects.Hover:Reverse()
+            end)
+            
+            if config.Callback then
+                Button.MouseButton1Click:Connect(config.Callback)
+            end
+            
+            return Button
+        end
+        
+        -- Add Toggle Component
+        function Tab:AddToggle(config)
+            local Toggle = {
+                Value = config.Default or false
+            }
+            
+            local ToggleFrame = Instance.new("Frame")
+            local ToggleButton = Instance.new("TextButton")
+            local ToggleInner = Instance.new("Frame")
+            local ToggleLabel = Instance.new("TextLabel")
+            
+            ToggleFrame.Name = "Toggle_" .. (config.Name or "Toggle")
+            ToggleFrame.Parent = TabContent
+            ToggleFrame.BackgroundTransparency = 1
+            ToggleFrame.Size = UDim2.new(0, 180, 0, 35)
+            
+            ToggleButton.Size = UDim2.new(0, 24, 0, 24)
+            ToggleButton.Position = UDim2.new(0, 0, 0.5, -12)
+            ToggleButton.BackgroundColor3 = LuminaUI.Settings.Theme.Secondary
+            ToggleButton.Parent = ToggleFrame
+            
+            ToggleInner.Size = UDim2.new(0, 18, 0, 18)
+            ToggleInner.Position = UDim2.new(0.5, -9, 0.5, -9)
+            ToggleInner.BackgroundColor3 = LuminaUI.Settings.Theme.Primary
+            ToggleInner.BackgroundTransparency = Toggle.Value and 0 or 1
+            ToggleInner.Parent = ToggleButton
+            
+            function Toggle:Set(value)
+                Toggle.Value = value
+                CreateTween(ToggleInner, {BackgroundTransparency = value and 0 or 1}):Play()
+                if config.Callback then
+                    config.Callback(value)
+                end
+            end
+            
+            ToggleButton.MouseButton1Click:Connect(function()
+                Toggle:Set(not Toggle.Value)
+            end)
+            
+            return Toggle
+        end
+        
+        -- Add Slider Component
+        function Tab:AddSlider(config)
+            local Slider = {
+                Value = config.Default or config.Min,
+                Min = config.Min or 0,
+                Max = config.Max or 100
+            }
+            
+            local SliderFrame = Instance.new("Frame")
+            local SliderBar = Instance.new("Frame")
+            local SliderFill = Instance.new("Frame")
+            local SliderButton = Instance.new("TextButton")
+            local ValueLabel = Instance.new("TextLabel")
+            
+            SliderFrame.Name = "Slider_" .. (config.Name or "Slider")
+            SliderFrame.Parent = TabContent
+            SliderFrame.BackgroundTransparency = 1
+            SliderFrame.Size = UDim2.new(0, 180, 0, 45)
+            
+            SliderBar.Size = UDim2.new(1, 0, 0, 6)
+            SliderBar.Position = UDim2.new(0, 0, 0.5, -3)
+            SliderBar.BackgroundColor3 = LuminaUI.Settings.Theme.Secondary
+            SliderBar.Parent = SliderFrame
+            
+            SliderFill.Size = UDim2.new(0, 0, 1, 0)
+            SliderFill.BackgroundColor3 = LuminaUI.Settings.Theme.Primary
+            SliderFill.Parent = SliderBar
+            
+            -- Add slider functionality
+            local function UpdateSlider(input)
+                local pos = math.clamp((input.Position.X - SliderBar.AbsolutePosition.X) / SliderBar.AbsoluteSize.X, 0, 1)
+                local value = math.floor(Slider.Min + (Slider.Max - Slider.Min) * pos)
+                Slider:Set(value)
+            end
+            
+            SliderButton.MouseButton1Down:Connect(function()
+                local connection
+                connection = RunService.RenderStepped:Connect(function()
+                    if UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) then
+                        UpdateSlider(UserInputService:GetMouseLocation())
+                    else
+                        connection:Disconnect()
+                    end
+                end)
+            end)
+            
+            function Slider:Set(value)
+                value = math.clamp(value, Slider.Min, Slider.Max)
+                Slider.Value = value
+                local percent = (value - Slider.Min) / (Slider.Max - Slider.Min)
+                CreateTween(SliderFill, {Size = UDim2.new(percent, 0, 1, 0)}):Play()
+                ValueLabel.Text = tostring(value)
+                if config.Callback then
+                    config.Callback(value)
+                end
+            end
+            
+            Slider:Set(Slider.Value)
+            return Slider
+        end
+        
+        -- Add Dropdown Component
+        function Tab:AddDropdown(config)
+            local Dropdown = {
+                Options = config.Options or {},
+                Selected = config.Default or config.Options[1]
+            }
+            
+            local DropdownFrame = Instance.new("Frame")
+            local DropdownButton = Instance.new("TextButton")
+            local OptionsList = Instance.new("ScrollingFrame")
+            
+            DropdownFrame.Name = "Dropdown_" .. (config.Name or "Dropdown")
+            DropdownFrame.Parent = TabContent
+            DropdownFrame.BackgroundColor3 = LuminaUI.Settings.Theme.Secondary
+            DropdownFrame.Size = UDim2.new(0, 180, 0, 35)
+            
+            -- Add dropdown functionality
+            local IsOpen = false
+            
+            DropdownButton.MouseButton1Click:Connect(function()
+                IsOpen = not IsOpen
+                CreateTween(DropdownFrame, {Size = IsOpen and UDim2.new(0, 180, 0, 120) or UDim2.new(0, 180, 0, 35)}):Play()
+                OptionsList.Visible = IsOpen
+            end)
+            
+            function Dropdown:Select(option)
+                Dropdown.Selected = option
+                DropdownButton.Text = option
+                if config.Callback then
+                    config.Callback(option)
+                end
+            end
+            
+            return Dropdown
+        end
+        
+        -- Add ColorPicker Component
+        function Tab:AddColorPicker(config)
+            local ColorPicker = {
+                Color = config.Default or Color3.new(1, 1, 1)
+            }
+            
+            local PickerFrame = Instance.new("Frame")
+            local ColorDisplay = Instance.new("Frame")
+            local PickerButton = Instance.new("TextButton")
+            
+            PickerFrame.Name = "ColorPicker_" .. (config.Name or "ColorPicker")
+            PickerFrame.Parent = TabContent
+            PickerFrame.BackgroundTransparency = 1
+            PickerFrame.Size = UDim2.new(0, 180, 0, 35)
+            
+            function ColorPicker:Set(color)
+                ColorPicker.Color = color
+                ColorDisplay.BackgroundColor3 = color
+                if config.Callback then
+                    config.Callback(color)
+                end
+            end
+            
+            return ColorPicker
+        end
+        
+        -- Add TextBox Component
+        function Tab:AddTextBox(config)
+            local TextBox = {
+                Text = config.Default or ""
+            }
+            
+            local TextBoxFrame = Instance.new("Frame")
+            local Input = Instance.new("TextBox")
+            
+            TextBoxFrame.Name = "TextBox_" .. (config.Name or "TextBox")
+            TextBoxFrame.Parent = TabContent
+            TextBoxFrame.BackgroundTransparency = 1
+            TextBoxFrame.Size = UDim2.new(0, 180, 0, 35)
+            
+            Input.Text = TextBox.Text
+            Input.PlaceholderText = config.Placeholder or "Enter text..."
+            
+            Input.FocusLost:Connect(function(enterPressed)
+                if enterPressed and config.Callback then
+                    config.Callback(Input.Text)
+                end
+            end)
+            
+            return TextBox
+        end
+        
+        return Tab
+    end
+    
+    -- Add Notification System
+    function Window:CreateNotification(config)
+        local Notification = {}
+        local NotifFrame = Instance.new("Frame")
+        local NotifLabel = Instance.new("TextLabel")
+        
+        NotifFrame.Name = "Notification"
+        NotifFrame.Parent = ScreenGui
+        NotifFrame.BackgroundColor3 = LuminaUI.Settings.Theme.Background
+        NotifFrame.Position = UDim2.new(1, -230, 1, -60)
+        NotifFrame.Size = UDim2.new(0, 220, 0, 50)
+        
+        CreateTween(NotifFrame, {Position = UDim2.new(1, 230, 1, -60)}):Play()
+        task.delay(config.Duration or 3, function()
+            CreateTween(NotifFrame, {Position = UDim2.new(1, -230, 1, -60)}):Play()
+            task.delay(0.5, function()
+                NotifFrame:Destroy()
+            end)
+        end)
+        
+        return Notification
+    end
+    
+    return Window
+end
+
+return LuminaUI
